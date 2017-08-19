@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <malloc.h>
 
@@ -52,15 +53,63 @@ double activation_function(double x) {
   return sigmoid(x);
 }
 
+void display_weights_forward(layer *temp_layer, neuron *temp_neuron) {
+  if(temp_neuron -> weights_forward == NULL)
+    return;
+  for(int i = 0; i < temp_layer -> next_layer -> neuron_count; i++)
+    printf("%lf ", *((temp_neuron -> weights_forward)[i] -> weight));
+  printf("\n");
+}
+
+void display_weights_backward(layer *temp_layer, neuron *temp_neuron) {
+  if(temp_neuron -> weights_backward == NULL)
+    return;
+  for(int i = 0; i < temp_layer -> previous_layer -> neuron_count; i++)
+    printf("%lf ", *((temp_neuron -> weights_backward)[i] -> weight));
+  printf("\n");
+}
+
+void display_output_matrix(layer *l) {
+  printf("Output Matrix\n");
+  for(int i = 0; i < (l -> neuron_count); i++)
+    printf("%lf ", (l -> output_matrix)[i]);
+  printf("\n");
+}
+
+void display_error_matrix(layer *l) {
+  printf("\nError Matrix\n");
+  for(int i = 0; i < (l -> neuron_count); i++)
+    printf("%lf ", (l -> error_matrix)[i]);
+  printf("\n");
+}
+
+void display_weight_matrix(layer *from_layer) {
+  if(from_layer -> next_layer == NULL)
+    return;
+  printf("\nWeight Matrix\n");
+  for(int i = 0; i < (from_layer -> neuron_count); i++) {
+    for(int j = 0; j < (from_layer -> next_layer -> neuron_count); j++) {
+      printf("%lf ", (from_layer -> weight_matrix)[i][j]);
+    }
+    printf("\n");
+  }
+  printf("\n");
+}
+
+void display_layer(layer *l) {
+  display_output_matrix(l);
+  display_error_matrix(l);
+  display_weight_matrix(l);
+}
+
 void display_net(net *network) {
-  // function for debugging neural network
-  puts("##");
-  neuron *temp = network -> input_layer -> neurons;
-  if(temp -> next_neuron == NULL)
-    puts("GOLMAAL");
-  while(temp != NULL) {
-    printf("output=%lf error=%lf\n", *(temp -> output), *(temp -> error));
-    temp = temp -> next_neuron;
+  layer *temp_layer = network -> input_layer;
+  int layer_count = 1;
+  while(temp_layer != NULL) {
+    printf("\nLayer %d\n", layer_count++);
+    printf("-------\n");
+    display_layer(temp_layer);
+    temp_layer = temp_layer -> next_layer;
   }
 }
 
@@ -84,45 +133,64 @@ layer * create_layer(int neurons_in_layer) {
     neuron *temp_neuron = create_neuron();
     temp_neuron -> next_neuron = temp_layer -> neurons;
     temp_layer -> neurons = temp_neuron;
+  }
+  // linking neurons to their respective places in output and error matrix
+  neuron *temp_neuron = temp_layer -> neurons;
+  int i = 0;
+  while(temp_neuron != NULL) {
     temp_neuron -> output = &(temp_layer -> output_matrix)[i];
-    (temp_layer -> output_matrix)[i] = 0;
+    (temp_layer -> output_matrix)[i] = rand() % 1000000 / 999999.0 + 0.0000001;
     temp_neuron -> error = &(temp_layer -> error_matrix)[i];
-    (temp_layer -> error_matrix)[i] = 0;
+    (temp_layer -> error_matrix)[i] = rand() % 1000000 / 999999.0 + 0.0000001;
+    temp_neuron = temp_neuron -> next_neuron;
+    i++;
   }
   return temp_layer;
 }
 
 void make_connections(layer *from_layer, layer *to_layer) {
-  neuron *temp1 = from_layer -> neurons, *temp2 = to_layer -> neurons;
+  neuron *temp1 = NULL, *temp2 = NULL;
+  from_layer -> next_layer = to_layer;
+  to_layer -> previous_layer = from_layer;
+  // generate weight matrix
+  from_layer -> weight_matrix = (double **) malloc((from_layer -> neuron_count)  * sizeof(double *));
+  for(int i = 0; i < (from_layer -> neuron_count); i++)
+    (from_layer -> weight_matrix)[i] = (double *) malloc((to_layer -> neuron_count) * sizeof(double));
+  // randomise weights in closed range (0, 1)
+  // this randomisation definitely needs some imporvement later
+  for(int i = 0; i < (from_layer -> neuron_count); i++)
+    for(int j = 0; j < (to_layer -> neuron_count); j++)
+      (from_layer -> weight_matrix)[i][j] = rand() % 1000000 / 999999.0 + 0.0000001;
+  // connecting from_layer neurons to to_layer neurons
+  temp1 = from_layer -> neurons;
   int temp_from_layer_row = 0, temp_from_layer_column = 0;
-  from_layer -> weight_matrix = (double **) malloc((from_layer -> neuron_count) * (to_layer -> neuron_count) * sizeof(double));
   while(temp1 != NULL) {
     temp2 = to_layer -> neurons;
-    temp1 -> weights_forward = (synapse **) malloc((to_layer -> neuron_count) * sizeof(synapse));
+    temp1 -> weights_forward = (synapse **) malloc((to_layer -> neuron_count) * sizeof(synapse *));
     int synapse_count = 0;
+    temp_from_layer_column = 0;
     while(temp2 != NULL) {
       synapse *temp_synapse = (synapse *) malloc(sizeof(synapse));
-      if(temp_from_layer_row >= from_layer -> neuron_count)
-	temp_from_layer_row++;
-      if(temp_from_layer_column >= to_layer -> neuron_count)
-	temp_from_layer_column++;
-      temp_synapse -> weight = &(from_layer -> weight_matrix)[temp_from_layer_row][temp_from_layer_column];
       temp_synapse -> from_neuron = temp1;
       temp_synapse -> to_neuron = temp2;
-      temp2 = temp2 -> next_neuron;
+      // link the weight from weight_matrix to synapse
+      temp_synapse -> weight = &(from_layer -> weight_matrix)[temp_from_layer_row][temp_from_layer_column++];
       (temp1 -> weights_forward)[synapse_count++] = temp_synapse;
+      temp2 = temp2 -> next_neuron;
     }
+    temp_from_layer_row++;
     temp1 = temp1 -> next_neuron;
   }
-  temp1 = to_layer -> neurons;
+  // connecting to_layer neurons back to from_layer neurons
+  temp2 = to_layer -> neurons;
   temp2 -> weights_forward = NULL;
   while(temp2 != NULL) {
-    temp2 -> weights_backward = (synapse **) malloc((from_layer -> neuron_count) * sizeof(synapse));
-    int synapse_count = 0;
-    while(temp1 != NULL) {
-      for(int i = 0; i < (from_layer -> neuron_count); i++)
-	if((((temp1 -> weights_forward)[i]) -> to_neuron) == temp2)
-	  (temp2 -> weights_backward)[synapse_count++] = (temp1 -> weights_forward)[i];
+    temp1 = from_layer -> neurons;
+    temp2 -> weights_backward = (synapse **) malloc((from_layer -> neuron_count) * sizeof(synapse *));
+    for(int i = 0, synapse_count = 0; i < (from_layer -> neuron_count); i++) {
+      for(int j = 0; j < (to_layer -> neuron_count); j++)
+	if((temp1 -> weights_forward)[j] -> to_neuron == temp2)
+	  (temp2 -> weights_backward)[synapse_count++] = (temp1 -> weights_forward)[j];
       temp1 = temp1 -> next_neuron;
     }
     temp2 = temp2 -> next_neuron;    
@@ -135,9 +203,7 @@ void add_layer_to_net(net *network, int neurons_in_layer) {
     network -> input_layer = new_layer;
   else
     make_connections(network -> output_layer, new_layer);
-  puts("aln**");
   network -> output_layer = new_layer;
-  puts("aln^^");
 }
 
 net * create_network() {
@@ -149,33 +215,37 @@ net * create_network() {
 
 void set_outputs_for_layer(layer *l, double *inputs) {
   int temp = 0;
-  while(temp != (l -> neuron_count))
+  while(temp != (l -> neuron_count)) {
     (l -> output_matrix)[temp] = inputs[temp];
+    temp++;
+  }
 }
 
 void set_errors_for_layer(layer *l, double *expected) {
   int temp = 0;
-  while(temp != (l -> neuron_count))
+  while(temp != (l -> neuron_count)) {
     (l -> error_matrix)[temp] = (expected[temp] - (l -> output_matrix)[temp]);
+    temp++;
+  }
 }
 
 void propagate_using_lists(net *network, double *inputs) {
   set_outputs_for_layer(network -> input_layer, inputs);
-  layer *l = (network -> input_layer) -> next_layer;
-  while(l != NULL) {
-    neuron *n = l -> neurons;
-    while(n != NULL) {
-      synapse ** wb = n -> weights_backward;
+  layer *temp_layer = (network -> input_layer) -> next_layer;
+  while(temp_layer != NULL) {
+    neuron *temp_neuron = temp_layer -> neurons;
+    while(temp_neuron != NULL) {
+      synapse ** wb = temp_neuron -> weights_backward;
       int synapse_count = 0;
       double summation = 0;
-      while(synapse_count != (l -> previous_layer -> neuron_count)) {
+      while(synapse_count != (temp_layer -> previous_layer -> neuron_count)) {
 	summation += ((*(wb[synapse_count] -> from_neuron -> output)) * (*(wb[synapse_count] -> weight)));
 	synapse_count++;
       }
-      *(n -> output) = activation_function(summation);
-      n = n -> next_neuron;
+      *(temp_neuron -> output) = activation_function(summation);
+      temp_neuron = temp_neuron -> next_neuron;
     }
-    l = l -> next_layer;
+    temp_layer = temp_layer -> next_layer;
   }
 }
 
@@ -225,15 +295,28 @@ void backpropogate(net *network, double *expected) {
   }
 }
 
+double * get_inputs(net *network) {
+  // use this functon to get input required for training or querying the neural net.
+  double *inputs = (double *) malloc((network -> input_layer -> neuron_count) * sizeof(double));
+  for(int i = 0; i < (network -> input_layer -> neuron_count); i++)
+    inputs[i] = rand() % 1000000 / 999999.0 + 0.0000001;    
+  return inputs;
+}
+
+void construct_network_architecture(net *network, int input_layers, int hidden_layers, int output_layers) {
+  add_layer_to_net(network, input_layers);
+  add_layer_to_net(network, hidden_layers);  
+  add_layer_to_net(network, output_layers);  
+}
+
 int main() {
   net *network = create_network();
-
-
-  add_layer_to_net(network, 3);
-  //  add_layer_to_net(network, 4);
-
+  construct_network_architecture(network, 3, 2, 3);
+  display_net(network);
+  printf("###############################\n");
+  
+  propogate(network, get_inputs(network));
 
   display_net(network);
-
   return 0;
 }
