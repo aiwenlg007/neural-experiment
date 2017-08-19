@@ -1,1 +1,3 @@
-***NEURAL NET CLASSIFIER FOR HANDWRITTEN DIGITS***
+***ARTIFICIAL NEURAL NETWORK LIBRARY***
+
+This is an ANN library to quickly prototype my own designs.

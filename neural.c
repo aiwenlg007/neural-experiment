@@ -52,16 +52,22 @@ double activation_function(double x) {
   return sigmoid(x);
 }
 
-void display_neural_network() {
+void display_net(net *network) {
   // function for debugging neural network
+  puts("##");
+  neuron *temp = network -> input_layer -> neurons;
+  if(temp -> next_neuron == NULL)
+    puts("GOLMAAL");
+  while(temp != NULL) {
+    printf("output=%lf error=%lf\n", *(temp -> output), *(temp -> error));
+    temp = temp -> next_neuron;
+  }
 }
 
-neuron * push_neuron_onto_layer(neuron *neurons) {
+neuron * create_neuron() {
   neuron *temp_neuron = (neuron *) malloc(sizeof(neuron));
   temp_neuron -> weights_forward = NULL;
   temp_neuron -> weights_backward = NULL;
-  temp_neuron -> next_neuron = neurons;
-  neurons = temp_neuron;
   return temp_neuron;
 }
 
@@ -71,10 +77,13 @@ layer * create_layer(int neurons_in_layer) {
   temp_layer -> output_matrix = (double *) malloc(neurons_in_layer * sizeof(double));
   temp_layer -> error_matrix = (double *) malloc(neurons_in_layer * sizeof(double));
   temp_layer -> weight_matrix = NULL;
+  temp_layer -> neurons = NULL;
   temp_layer -> next_layer = NULL;
   temp_layer -> previous_layer = NULL;
   for(int i = 0; i < neurons_in_layer; i++) {
-    neuron *temp_neuron = push_neuron_onto_layer(temp_layer -> neurons);
+    neuron *temp_neuron = create_neuron();
+    temp_neuron -> next_neuron = temp_layer -> neurons;
+    temp_layer -> neurons = temp_neuron;
     temp_neuron -> output = &(temp_layer -> output_matrix)[i];
     (temp_layer -> output_matrix)[i] = 0;
     temp_neuron -> error = &(temp_layer -> error_matrix)[i];
@@ -120,13 +129,22 @@ void make_connections(layer *from_layer, layer *to_layer) {
   }
 }
 
-void append_new_layer_to_neural_net(net *network, int neurons_in_layer) {
+void add_layer_to_net(net *network, int neurons_in_layer) {
   layer *new_layer = create_layer(neurons_in_layer);
   if(network -> input_layer == NULL)
     network -> input_layer = new_layer;
   else
     make_connections(network -> output_layer, new_layer);
+  puts("aln**");
   network -> output_layer = new_layer;
+  puts("aln^^");
+}
+
+net * create_network() {
+  net *network = (net *) malloc(sizeof(net));
+  network -> input_layer = NULL;
+  network -> output_layer = NULL;
+  return network;
 }
 
 void set_outputs_for_layer(layer *l, double *inputs) {
@@ -191,23 +209,31 @@ void backpropagate_using_matrices(net *network, double *expected) {
 
 void propogate(net *network, double *inputs) {
   if(LIST_MODE) {
-    propagate_using_lists(net *network, double *inputs);
+    propagate_using_lists(network,inputs);
   }
   else if(MATRIX_MODE) {
-    propagate_using_matrices(net *network, double *inputs);
+    propagate_using_matrices(network, inputs);
   }  
 }
 
-void backpropogate() {
+void backpropogate(net *network, double *expected) {
   if(LIST_MODE) {
-    backpropagate_using_lists(net *network, double *expected);
+    backpropagate_using_lists(network, expected);
   }
   else if(MATRIX_MODE) {
-    backpropagate_using_matrices(net *network, double *expected);
+    backpropagate_using_matrices(network, expected);
   }
 }
 
 int main() {
-  puts("ultra!");
+  net *network = create_network();
+
+
+  add_layer_to_net(network, 3);
+  //  add_layer_to_net(network, 4);
+
+
+  display_net(network);
+
   return 0;
 }
