@@ -8,10 +8,7 @@
 
 /* 
    Note to self.
-   1. func. to multiply, add, subtract two matrices, to multiply matrix by a scalar, to quick mupltiply a matrix with transpose of other matrix.
-   2. maybe a destination matrix will also be passed to these functions to store the result.
-   3. propagation and backpropagation functions
-   4. maybe a learning rule function which does something, or maybe not.
+   1. maybe a learning rule function which does something, or maybe not.
 */
 
 typedef struct neuron {
@@ -42,6 +39,10 @@ typedef struct net {
   struct layer *input_layer;
   struct layer *output_layer;
 }net;
+
+double randomiser() {
+  return rand() % 1000000 / 999999.0 + 0.0000001;
+}
 
 double sigmoid(double x) {
   return 1 / (1 + exp(-x));
@@ -88,9 +89,8 @@ void display_weight_matrix(layer *from_layer) {
     return;
   printf("\nWeight Matrix\n");
   for(int i = 0; i < (from_layer -> neuron_count); i++) {
-    for(int j = 0; j < (from_layer -> next_layer -> neuron_count); j++) {
+    for(int j = 0; j < (from_layer -> next_layer -> neuron_count); j++)
       printf("%lf ", (from_layer -> weight_matrix)[i][j]);
-    }
     printf("\n");
   }
   printf("\n");
@@ -139,9 +139,9 @@ layer * create_layer(int neurons_in_layer) {
   int i = 0;
   while(temp_neuron != NULL) {
     temp_neuron -> output = &(temp_layer -> output_matrix)[i];
-    (temp_layer -> output_matrix)[i] = rand() % 1000000 / 999999.0 + 0.0000001;
+    (temp_layer -> output_matrix)[i] = randomiser();
     temp_neuron -> error = &(temp_layer -> error_matrix)[i];
-    (temp_layer -> error_matrix)[i] = rand() % 1000000 / 999999.0 + 0.0000001;
+    (temp_layer -> error_matrix)[i] = randomiser();
     temp_neuron = temp_neuron -> next_neuron;
     i++;
   }
@@ -160,7 +160,7 @@ void make_connections(layer *from_layer, layer *to_layer) {
   // this randomisation definitely needs some imporvement later
   for(int i = 0; i < (from_layer -> neuron_count); i++)
     for(int j = 0; j < (to_layer -> neuron_count); j++)
-      (from_layer -> weight_matrix)[i][j] = rand() % 1000000 / 999999.0 + 0.0000001;
+      (from_layer -> weight_matrix)[i][j] = randomiser();
   // connecting from_layer neurons to to_layer neurons
   temp1 = from_layer -> neurons;
   int temp_from_layer_row = 0, temp_from_layer_column = 0;
@@ -231,7 +231,7 @@ void set_errors_for_layer(layer *l, double *expected) {
 
 void propagate_using_lists(net *network, double *inputs) {
   set_outputs_for_layer(network -> input_layer, inputs);
-  layer *temp_layer = (network -> input_layer) -> next_layer;
+  layer *temp_layer = network -> input_layer -> next_layer;
   while(temp_layer != NULL) {
     neuron *temp_neuron = temp_layer -> neurons;
     while(temp_neuron != NULL) {
@@ -249,28 +249,47 @@ void propagate_using_lists(net *network, double *inputs) {
   }
 }
 
-void backpropagate_using_lists(net *network, double *expected) {
-  set_errors_for_layer(network -> output_layer, expected);
-  layer *l = (network -> output_layer) -> previous_layer;
-  while(l -> previous_layer == NULL) {
-    neuron *n = l -> neurons;
-    while(n != NULL) {
-      synapse ** wf = n -> weights_forward;
-      int synapse_count = 0;
-      double total_error = 0;
-      while(synapse_count != (l -> next_layer -> neuron_count)) {
-	total_error += ((*(wf[synapse_count] -> to_neuron -> error)) * (*(wf[synapse_count] -> weight)));
-	synapse_count++;
-      }
-      *(n -> error) = total_error;
-      n = n -> next_neuron;
+void propagate_using_matrices(net *network, double *inputs) {
+  set_outputs_for_layer(network -> input_layer, inputs);
+  layer *temp_layer = network -> input_layer -> next_layer;
+  while(temp_layer != NULL) {
+    for(int i = 0; i < (temp_layer -> neuron_count); i++) {
+      double summation = 0;
+      for(int j = 0; j < (temp_layer -> previous_layer -> neuron_count); j++)
+	summation += ((temp_layer -> previous_layer -> output_matrix)[j] * (temp_layer -> previous_layer -> weight_matrix)[j][i]);
+      (temp_layer -> output_matrix)[i] = activation_function(summation);
     }
-    l = l -> next_layer;
-  }  
+    temp_layer = temp_layer -> next_layer;
+  }
 }
 
-void propagate_using_matrices(net *network, double *inputs) {
-  
+void backpropagate_using_lists(net *network, double *expected) {
+  set_errors_for_layer(network -> output_layer, expected);
+  layer *temp_layer = (network -> output_layer) -> previous_layer;
+  while(temp_layer != NULL) {
+    double *total_weight_into_neuron = (double *) malloc((temp_layer -> next_layer -> neuron_count) * sizeof(double));
+    neuron *temp_neuron = temp_layer -> next_layer -> neurons;
+    for(int i = 0; i < (temp_layer -> next_layer -> neuron_count); i++) {
+      double summation = 0;
+      synapse **wb = temp_neuron -> weights_backward;
+      for(int j = 0; j < (temp_layer -> neuron_count); j++)
+	summation += *(wb[j] -> weight);
+      total_weight_into_neuron[i] = summation;
+      temp_neuron = temp_neuron -> next_neuron;
+    }
+    temp_neuron = temp_layer -> neurons;      
+    for(int i = 0; (temp_neuron != NULL) && i < (temp_layer -> neuron_count); i++) {
+      double summation = 0;
+      synapse **wf = temp_neuron -> weights_forward;
+      for(int j = 0; j < (temp_layer -> next_layer -> neuron_count); j++)
+	summation += ((*(wf[j] -> weight)/ total_weight_into_neuron[j]) * (*(wf[j] -> to_neuron -> error)));
+      *(temp_neuron -> error) = summation;
+      temp_neuron = temp_neuron -> next_neuron;
+    }
+    // deallocate the array to prevent memory leaks
+    free(total_weight_into_neuron);
+    temp_layer = temp_layer -> previous_layer;
+  }
 }
 
 void backpropagate_using_matrices(net *network, double *expected) {
@@ -286,7 +305,7 @@ void propogate(net *network, double *inputs) {
   }  
 }
 
-void backpropogate(net *network, double *expected) {
+void backpropagate(net *network, double *expected) {
   if(LIST_MODE) {
     backpropagate_using_lists(network, expected);
   }
@@ -296,10 +315,10 @@ void backpropogate(net *network, double *expected) {
 }
 
 double * get_inputs(net *network) {
-  // use this functon to get input required for training or querying the neural net.
+  // use this functon to get inputs required for training or querying the neural net.
   double *inputs = (double *) malloc((network -> input_layer -> neuron_count) * sizeof(double));
   for(int i = 0; i < (network -> input_layer -> neuron_count); i++)
-    inputs[i] = rand() % 1000000 / 999999.0 + 0.0000001;    
+    inputs[i] = randomiser();
   return inputs;
 }
 
@@ -311,12 +330,37 @@ void construct_network_architecture(net *network, int input_layers, int hidden_l
 
 int main() {
   net *network = create_network();
-  construct_network_architecture(network, 3, 2, 3);
-  display_net(network);
-  printf("###############################\n");
   
-  propogate(network, get_inputs(network));
+  construct_network_architecture(network, 2, 2, 2);
+    
+  double **arr = (network -> input_layer -> weight_matrix);
+  arr[0][0] = 3.0;
+  arr[0][1] = 1.0;
+  arr[1][0] = 2.0;
+  arr[1][1] = 7.0;
+  arr = (network -> input_layer -> next_layer -> weight_matrix);
+  arr[0][0] = 2.0;
+  arr[0][1] = 1.0;
+  arr[1][0] = 3.0;
+  arr[1][1] = 4.0;
+  
 
+  
+  //printf("\nsigmoid = %lf\n", activation_function(1.254));
+  //display_net(network);
+  printf("###############################\n");
+
+  double brr[2] = {0.9, 0.1};
+  propogate(network, brr);
+
+  double *drr = (network -> output_layer -> error_matrix);
+  drr[0] = 0;
+  drr[1] = 0;
+
+  double crr[2] = {2.487772, 1.486291};
+
+  backpropagate(network, crr);
+  
   display_net(network);
   return 0;
 }
