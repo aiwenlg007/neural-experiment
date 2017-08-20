@@ -9,6 +9,9 @@
 /* 
    Note to self.
    1. maybe a learning rule function which does something, or maybe not.
+   2. an inverse activation function
+   3. logic to reverse flow of things to know neural net's viewpoint
+
 */
 
 typedef struct neuron {
@@ -267,6 +270,7 @@ void backpropagate_using_lists(net *network, double *expected) {
   set_errors_for_layer(network -> output_layer, expected);
   layer *temp_layer = (network -> output_layer) -> previous_layer;
   while(temp_layer != NULL) {
+    // calculate total weight into the next layer neurons
     double *total_weight_into_neuron = (double *) malloc((temp_layer -> next_layer -> neuron_count) * sizeof(double));
     neuron *temp_neuron = temp_layer -> next_layer -> neurons;
     for(int i = 0; i < (temp_layer -> next_layer -> neuron_count); i++) {
@@ -277,6 +281,7 @@ void backpropagate_using_lists(net *network, double *expected) {
       total_weight_into_neuron[i] = summation;
       temp_neuron = temp_neuron -> next_neuron;
     }
+    // backpropagate errors
     temp_neuron = temp_layer -> neurons;      
     for(int i = 0; (temp_neuron != NULL) && i < (temp_layer -> neuron_count); i++) {
       double summation = 0;
@@ -286,8 +291,12 @@ void backpropagate_using_lists(net *network, double *expected) {
       *(temp_neuron -> error) = summation;
       temp_neuron = temp_neuron -> next_neuron;
     }
-    // deallocate the array to prevent memory leaks
+    // deallocate the allocated array to prevent memory leaks
     free(total_weight_into_neuron);
+    
+    // update weights
+    
+    
     temp_layer = temp_layer -> previous_layer;
   }
 }

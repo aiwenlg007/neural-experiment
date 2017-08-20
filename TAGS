@@ -2,58 +2,59 @@
 LICENSE.md,16
 Copyright 3,13
 
-neural.c,1861
+neural.c,1888
 #define MATRIX_MODE	6,78
 #define LIST_MODE	7,100
-typedef struct neuron 17,505
-  double *output;output18,529
-  double *error;error19,547
-  struct synapse **weights_forward;weights_forward20,564
-  struct synapse **weights_backward;weights_backward21,600
-  struct neuron *next_neuron;next_neuron22,637
-}neuron;neuron23,667
-typedef struct synapse 25,677
-  double *weight;weight26,702
-  struct neuron *from_neuron;from_neuron27,720
-  struct neuron *to_neuron;to_neuron28,750
-}synapse;synapse29,778
-typedef struct layer 31,789
-  int neuron_count;32,812
-  double *output_matrix;output_matrix33,832
-  double *error_matrix;error_matrix34,857
-  double **weight_matrix;weight_matrix35,881
-  struct neuron *neurons;neurons36,907
-  struct layer *next_layer;next_layer37,933
-  struct layer *previous_layer;previous_layer38,961
-}layer;layer39,993
-typedef struct net 41,1002
-  struct layer *input_layer;input_layer42,1023
-  struct layer *output_layer;output_layer43,1052
-}net;net44,1082
-double sigmoid(46,1089
-double activation_function(50,1147
-void display_weights_forward(56,1388
-void display_weights_backward(64,1673
-void display_output_matrix(72,1965
-void display_error_matrix(79,2144
-void display_weight_matrix(86,2322
-void display_layer(99,2690
-void display_net(105,2807
-neuron * create_neuron(116,3088
-layer * create_layer(123,3282
-void make_connections(151,4468
-void add_layer_to_net(200,6776
-net * create_network(209,7073
-void set_outputs_for_layer(216,7232
-void set_errors_for_layer(224,7408
-void propagate_using_lists(232,7617
-void backpropagate_using_lists(252,8393
-void propagate_using_matrices(272,9064
-void backpropagate_using_matrices(276,9132
-void propogate(280,9206
-void backpropogate(289,9399
-double * get_inputs(298,9609
-void construct_network_architecture(306,9976
-int main(312,10222
+typedef struct neuron 17,326
+  double *output;output18,350
+  double *error;error19,368
+  struct synapse **weights_forward;weights_forward20,385
+  struct synapse **weights_backward;weights_backward21,421
+  struct neuron *next_neuron;next_neuron22,458
+}neuron;neuron23,488
+typedef struct synapse 25,498
+  double *weight;weight26,523
+  struct neuron *from_neuron;from_neuron27,541
+  struct neuron *to_neuron;to_neuron28,571
+}synapse;synapse29,599
+typedef struct layer 31,610
+  int neuron_count;32,633
+  double *output_matrix;output_matrix33,653
+  double *error_matrix;error_matrix34,678
+  double **weight_matrix;weight_matrix35,702
+  struct neuron *neurons;neurons36,728
+  struct layer *next_layer;next_layer37,754
+  struct layer *previous_layer;previous_layer38,782
+}layer;layer39,814
+typedef struct net 41,823
+  struct layer *input_layer;input_layer42,844
+  struct layer *output_layer;output_layer43,873
+}net;net44,903
+double randomiser(46,910
+double sigmoid(50,985
+double activation_function(54,1043
+void display_weights_forward(60,1284
+void display_weights_backward(68,1569
+void display_output_matrix(76,1861
+void display_error_matrix(83,2040
+void display_weight_matrix(90,2218
+void display_layer(102,2578
+void display_net(108,2695
+neuron * create_neuron(119,2976
+layer * create_layer(126,3170
+void make_connections(154,4302
+void add_layer_to_net(203,6583
+net * create_network(212,6880
+void set_outputs_for_layer(219,7039
+void set_errors_for_layer(227,7215
+void propagate_using_lists(235,7424
+void propagate_using_matrices(255,8198
+void backpropagate_using_lists(269,8826
+void backpropagate_using_matrices(304,10341
+void propogate(308,10415
+void backpropagate(317,10608
+double * get_inputs(326,10818
+void construct_network_architecture(334,11155
+int main(340,11401
 
 README.md,0
