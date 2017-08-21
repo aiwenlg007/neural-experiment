@@ -3,14 +3,14 @@
 #include <math.h>
 #include <malloc.h>
 
-#define MATRIX_MODE	0
-#define LIST_MODE	1
+#define LEARNING_RATE	0.2
+#define MATRIX_MODE	1
+#define LIST_MODE	0
 
 /* 
    Note to self.
-   1. maybe a learning rule function which does something, or maybe not.
-   2. an inverse activation function
-   3. logic to reverse flow of things to know neural net's viewpoint
+   1. an inverse activation function
+   2. logic to reverse flow of things to know neural net's viewpoint
 
 */
 
@@ -47,6 +47,10 @@ double randomiser() {
   return rand() % 1000000 / 999999.0 + 0.0000001;
 }
 
+double learning_rate() {
+  return LEARNING_RATE;
+}
+
 double sigmoid(double x) {
   return 1 / (1 + exp(-x));
 }
@@ -55,6 +59,11 @@ double activation_function(double x) {
   // some other alternatives can be hyperbolic tangent, softmax function, or rectifier function.
   // maybe a switch case here, which accepts type of activation function to use.
   return sigmoid(x);
+}
+
+double gradient_of_activaton_function(double error_of_synapse_from_back_layer, double output_of_synapse_from_layer, double output_of_synapse_to_front_layer) {
+  // currently only for sigmoid/logistic functon
+  return -1 * learning_rate() * error_of_synapse_from_back_layer   * sigmoid(output_of_synapse_to_front_layer) * sigmoid(1 - output_of_synapse_to_front_layer) * output_of_synapse_from_layer;
 }
 
 void display_weights_forward(layer *temp_layer, neuron *temp_neuron) {
@@ -270,7 +279,7 @@ void backpropagate_using_lists(net *network, double *expected) {
   set_errors_for_layer(network -> output_layer, expected);
   layer *temp_layer = (network -> output_layer) -> previous_layer;
   while(temp_layer != NULL) {
-    // calculate total weight into the next layer neurons
+    // calculate total weight going into each neuron of next layer
     double *total_weight_into_neuron = (double *) malloc((temp_layer -> next_layer -> neuron_count) * sizeof(double));
     neuron *temp_neuron = temp_layer -> next_layer -> neurons;
     for(int i = 0; i < (temp_layer -> next_layer -> neuron_count); i++) {
@@ -293,15 +302,38 @@ void backpropagate_using_lists(net *network, double *expected) {
     }
     // deallocate the allocated array to prevent memory leaks
     free(total_weight_into_neuron);
-    
     // update weights
-    
-    
+    temp_neuron = temp_layer -> neurons;
+    while(temp_neuron != NULL) {
+      synapse **wf = temp_neuron -> weights_forward;
+      for(int i = 0; i < (temp_layer -> next_layer -> neuron_count); i++)
+	*(wf[i] -> weight) = *(wf[i] -> weight) - learning_rate() * gradient_of_activaton_function( *(wf[i] -> from_neuron -> error), *(wf[i] -> from_neuron -> output), *(wf[i] -> to_neuron -> output));
+      temp_neuron = temp_neuron -> next_neuron;
+    }
     temp_layer = temp_layer -> previous_layer;
   }
 }
 
 void backpropagate_using_matrices(net *network, double *expected) {
+  set_errors_for_layer(network -> output_layer, expected);
+  layer *temp_layer = (network -> output_layer) -> previous_layer;
+  while(temp_layer != NULL) {
+    // backpropagate errors
+    for(int i = 0; i < (temp_layer -> neuron_count); i++) {
+      (temp_layer -> error_matrix)[i] = 0;
+      for(int j = 0; j < (temp_layer -> next_layer -> neuron_count); j++) {
+	double summation = 0;
+	for(int k = 0; k < (temp_layer -> neuron_count); k++)
+	  summation += (temp_layer -> weight_matrix)[k][j];
+	(temp_layer -> error_matrix)[i] += (temp_layer -> weight_matrix)[i][j] * (temp_layer -> next_layer -> error_matrix)[j] / summation;  
+      }
+    }
+    // update weights
+    for(int i = 0; i < (temp_layer -> neuron_count); i++)
+      for(int j = 0; j < (temp_layer -> next_layer -> neuron_count); j++)
+	(temp_layer -> weight_matrix)[i][j] -= (learning_rate() * gradient_of_activaton_function((temp_layer -> error_matrix)[i], (temp_layer -> output_matrix)[i], (temp_layer -> next_layer -> output_matrix)[j]));
+    temp_layer = temp_layer -> previous_layer;
+  }
   
 }
 
@@ -341,7 +373,7 @@ int main() {
   net *network = create_network();
   
   construct_network_architecture(network, 2, 2, 2);
-    
+      
   double **arr = (network -> input_layer -> weight_matrix);
   arr[0][0] = 3.0;
   arr[0][1] = 1.0;
@@ -352,10 +384,7 @@ int main() {
   arr[0][1] = 1.0;
   arr[1][0] = 3.0;
   arr[1][1] = 4.0;
-  
 
-  
-  //printf("\nsigmoid = %lf\n", activation_function(1.254));
   //display_net(network);
   printf("###############################\n");
 
@@ -369,6 +398,9 @@ int main() {
   double crr[2] = {2.487772, 1.486291};
 
   backpropagate(network, crr);
+  //backpropagate(network, crr);
+  //backpropagate(network, crr);
+  //backpropagate(network, crr);
   
   display_net(network);
   return 0;
