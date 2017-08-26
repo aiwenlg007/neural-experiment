@@ -1,58 +1,64 @@
 
-neural.c,1993
+neural.c,2160
 #define LEARNING_RATE	6,78
 #define MATRIX_MODE	7,104
 #define LIST_MODE	8,126
-typedef struct neuron 17,279
-  double *output;output18,303
-  double *error;error19,321
-  struct synapse **weights_forward;weights_forward20,338
-  struct synapse **weights_backward;weights_backward21,374
-  struct neuron *next_neuron;next_neuron22,411
-}neuron;neuron23,441
-typedef struct synapse 25,451
-  double *weight;weight26,476
-  struct neuron *from_neuron;from_neuron27,494
-  struct neuron *to_neuron;to_neuron28,524
-}synapse;synapse29,552
-typedef struct layer 31,563
-  int neuron_count;32,586
-  double *output_matrix;output_matrix33,606
-  double *error_matrix;error_matrix34,631
-  double **weight_matrix;weight_matrix35,655
-  struct neuron *neurons;neurons36,681
-  struct layer *next_layer;next_layer37,707
-  struct layer *previous_layer;previous_layer38,735
-}layer;layer39,767
-typedef struct net 41,776
-  struct layer *input_layer;input_layer42,797
-  struct layer *output_layer;output_layer43,826
-}net;net44,856
-double randomiser(46,863
-double learning_rate(50,938
-double sigmoid(54,990
-double activation_function(58,1048
-double gradient_of_activaton_function(64,1289
-void display_weights_forward(69,1691
-void display_weights_backward(77,1976
-void display_output_matrix(85,2268
-void display_error_matrix(92,2447
-void display_weight_matrix(99,2625
-void display_layer(111,2985
-void display_net(117,3102
-neuron * create_neuron(128,3383
-layer * create_layer(135,3577
-void make_connections(163,4709
-void add_layer_to_net(212,6990
-net * create_network(221,7287
-void set_outputs_for_layer(228,7446
-void set_errors_for_layer(236,7622
-void propagate_using_lists(244,7831
-void propagate_using_matrices(264,8605
-void backpropagate_using_lists(278,9233
-void backpropagate_using_matrices(317,11193
-void propogate(340,12322
-void backpropagate(349,12515
-double * get_inputs(358,12725
-void construct_network_architecture(366,13062
-int main(372,13308
+#define SHOW_STATS	9,146
+typedef struct neuron 18,300
+  double *output;output19,324
+  double *error;error20,342
+  struct synapse **weights_forward;weights_forward21,359
+  struct synapse **weights_backward;weights_backward22,395
+  struct neuron *next_neuron;next_neuron23,432
+}neuron;neuron24,462
+typedef struct synapse 26,472
+  double *weight;weight27,497
+  struct neuron *from_neuron;from_neuron28,515
+  struct neuron *to_neuron;to_neuron29,545
+}synapse;synapse30,573
+typedef struct layer 32,584
+  int neuron_count;33,607
+  double *output_matrix;output_matrix34,627
+  double *error_matrix;error_matrix35,652
+  double **weight_matrix;weight_matrix36,676
+  struct neuron *neurons;neurons37,702
+  struct layer *next_layer;next_layer38,728
+  struct layer *previous_layer;previous_layer39,756
+}layer;layer40,788
+typedef struct net 42,797
+  struct layer *input_layer;input_layer43,818
+  struct layer *output_layer;output_layer44,847
+}net;net45,877
+double randomiser(47,884
+double learning_rate(51,958
+double sigmoid(55,1010
+double activation_function(59,1068
+double gradient_of_activaton_function(65,1309
+void display_weights_forward(70,1711
+void display_weights_backward(78,1996
+void display_output_matrix(86,2288
+void display_error_matrix(93,2467
+void display_weight_matrix(100,2645
+void display_layer(112,3005
+void display_net(118,3122
+neuron * create_neuron(129,3403
+layer * create_layer(136,3597
+void make_connections(164,4718
+void add_layer_to_net(212,6934
+net * create_network(221,7231
+void set_outputs_for_layer(228,7390
+void set_errors_for_layer(236,7566
+void propagate_using_lists(244,7774
+void propagate_using_matrices(264,8548
+void backpropagate_using_lists(278,9176
+void backpropagate_using_matrices(317,11136
+void propagate(340,12487
+void backpropagate(349,12680
+void construct_network_architecture(358,12890
+double * get_random_inputs(364,13136
+int get_label(371,13394
+double * get_expected(378,13505
+double * get_inputs(386,13700
+int query(396,14021
+void train(426,14896
+int main(438,15179

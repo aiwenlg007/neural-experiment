@@ -3,9 +3,10 @@
 #include <math.h>
 #include <malloc.h>
 
-#define LEARNING_RATE	0.2
+#define LEARNING_RATE	0.3
 #define MATRIX_MODE	1
 #define LIST_MODE	0
+#define SHOW_STATS	1
 
 /* 
    Note to self.
@@ -44,7 +45,7 @@ typedef struct net {
 }net;
 
 double randomiser() {
-  return rand() % 1000000 / 999999.0 + 0.0000001;
+  return rand() % 1000000 / 999998.0 + 0.000001;
 }
 
 double learning_rate() {
@@ -151,7 +152,7 @@ layer * create_layer(int neurons_in_layer) {
   int i = 0;
   while(temp_neuron != NULL) {
     temp_neuron -> output = &(temp_layer -> output_matrix)[i];
-    (temp_layer -> output_matrix)[i] = randomiser();
+    (temp_layer -> output_matrix)[i] = 0;
     temp_neuron -> error = &(temp_layer -> error_matrix)[i];
     (temp_layer -> error_matrix)[i] = randomiser();
     temp_neuron = temp_neuron -> next_neuron;
@@ -168,11 +169,10 @@ void make_connections(layer *from_layer, layer *to_layer) {
   from_layer -> weight_matrix = (double **) malloc((from_layer -> neuron_count)  * sizeof(double *));
   for(int i = 0; i < (from_layer -> neuron_count); i++)
     (from_layer -> weight_matrix)[i] = (double *) malloc((to_layer -> neuron_count) * sizeof(double));
-  // randomise weights in closed range (0, 1)
-  // this randomisation definitely needs some imporvement later
+  // randomise weights in some range
   for(int i = 0; i < (from_layer -> neuron_count); i++)
     for(int j = 0; j < (to_layer -> neuron_count); j++)
-      (from_layer -> weight_matrix)[i][j] = randomiser();
+      (from_layer -> weight_matrix)[i][j] = randomiser() * 2 - 1;
   // connecting from_layer neurons to to_layer neurons
   temp1 = from_layer -> neurons;
   int temp_from_layer_row = 0, temp_from_layer_column = 0;
@@ -236,7 +236,7 @@ void set_outputs_for_layer(layer *l, double *inputs) {
 void set_errors_for_layer(layer *l, double *expected) {
   int temp = 0;
   while(temp != (l -> neuron_count)) {
-    (l -> error_matrix)[temp] = (expected[temp] - (l -> output_matrix)[temp]);
+    (l -> error_matrix)[temp] = ((l -> output_matrix)[temp]- expected[temp]);
     temp++;
   }
 }
@@ -331,13 +331,13 @@ void backpropagate_using_matrices(net *network, double *expected) {
     // update weights
     for(int i = 0; i < (temp_layer -> neuron_count); i++)
       for(int j = 0; j < (temp_layer -> next_layer -> neuron_count); j++)
-	(temp_layer -> weight_matrix)[i][j] -= (learning_rate() * gradient_of_activaton_function((temp_layer -> error_matrix)[i], (temp_layer -> output_matrix)[i], (temp_layer -> next_layer -> output_matrix)[j]));
+	//(temp_layer -> weight_matrix)[i][j] += (learning_rate() * gradient_of_activaton_function((temp_layer -> next_layer -> error_matrix)[i], (temp_layer -> next_layer -> output_matrix)[i], (temp_layer -> output_matrix)[j]));
+	(temp_layer -> weight_matrix)[i][j] += (learning_rate() * gradient_of_activaton_function((temp_layer -> error_matrix)[i], (temp_layer -> output_matrix)[i], (temp_layer -> next_layer -> output_matrix)[j]));
     temp_layer = temp_layer -> previous_layer;
-  }
-  
+  }  
 }
 
-void propogate(net *network, double *inputs) {
+void propagate(net *network, double *inputs) {
   if(LIST_MODE) {
     propagate_using_lists(network,inputs);
   }
@@ -355,53 +355,109 @@ void backpropagate(net *network, double *expected) {
   }
 }
 
-double * get_inputs(net *network) {
-  // use this functon to get inputs required for training or querying the neural net.
-  double *inputs = (double *) malloc((network -> input_layer -> neuron_count) * sizeof(double));
-  for(int i = 0; i < (network -> input_layer -> neuron_count); i++)
-    inputs[i] = randomiser();
-  return inputs;
-}
-
 void construct_network_architecture(net *network, int input_layers, int hidden_layers, int output_layers) {
   add_layer_to_net(network, input_layers);
   add_layer_to_net(network, hidden_layers);  
   add_layer_to_net(network, output_layers);  
 }
 
+double * get_random_inputs(net *network) {
+  double *inputs = (double *) malloc((network -> input_layer -> neuron_count) * sizeof(double));
+  for(int i = 0; i < (network -> input_layer -> neuron_count); i++)
+    inputs[i] = randomiser();
+  return inputs;
+}
+
+int get_label() {
+  int num;
+  fscanf(stdin, "%d,", &num);
+  //printf("\nlabel = %d\n", num);
+  return num;
+}
+
+double * get_expected() {
+  double *expected = (double *) malloc(10 * sizeof(double));
+  for(int i = 0; i < 10; i++)
+    expected[i] = 0.01;
+  expected[get_label()] = 0.99;
+  return expected;
+}
+
+double * get_inputs() {
+  // use this functon to get inputs required for training or querying the neural net.
+  double *inputs = (double *) malloc(784 * sizeof(double));
+  for(int i = 0; i < 784; i++) {
+    fscanf(stdin, "%lf,", &inputs[i]);
+    inputs[i] = (inputs[i]) / 255.0 * 0.99 + 0.01;
+  }    
+  return inputs;
+}
+
+int query(net *network) {
+  int label = get_label();
+  double *inputs = get_inputs();
+  propagate(network, inputs);
+  int max_label = 0;
+  double max_score = (network -> output_layer -> output_matrix)[0];
+  for(int i = 1; i < (network -> output_layer -> neuron_count); i++) {
+    if((network -> output_layer -> output_matrix)[i] > max_score) {
+      max_label = i;
+      max_score = (network -> output_layer -> output_matrix)[i];
+    }
+  }
+  if(SHOW_STATS) {
+    printf("\nlabel = %d -> %d\n", label, max_label);
+    if(SHOW_STATS) {
+       if(label == max_label)
+	 printf("CORRECT\n");
+       else
+      printf("INCORRECT\n");
+    }
+    for(int i = 0; i < (network -> output_layer -> neuron_count); i++)
+      printf("%d -> %.0lf\n", i, (network -> output_layer -> output_matrix)[i] * 100);
+  }
+  if(label == max_label)
+    return 1;
+  else
+    return 0;
+  free(inputs);
+}
+
+void train(net *network) {
+  double *expected = get_expected();
+  double *inputs = get_inputs();
+  propagate(network, inputs);
+  backpropagate(network, expected);
+  // experiments
+  //puts("");
+  //display_output_matrix(network -> output_layer);
+  free(expected);
+  free(inputs);
+}
+
 int main() {
   net *network = create_network();
+
+  construct_network_architecture(network, 784, 100, 10);
   
-  construct_network_architecture(network, 2, 2, 2);
-      
-  double **arr = (network -> input_layer -> weight_matrix);
-  arr[0][0] = 3.0;
-  arr[0][1] = 1.0;
-  arr[1][0] = 2.0;
-  arr[1][1] = 7.0;
-  arr = (network -> input_layer -> next_layer -> weight_matrix);
-  arr[0][0] = 2.0;
-  arr[0][1] = 1.0;
-  arr[1][0] = 3.0;
-  arr[1][1] = 4.0;
-
-  //display_net(network);
-  printf("###############################\n");
-
-  double brr[2] = {0.9, 0.1};
-  propogate(network, brr);
-
-  double *drr = (network -> output_layer -> error_matrix);
-  drr[0] = 0;
-  drr[1] = 0;
-
-  double crr[2] = {2.487772, 1.486291};
-
-  backpropagate(network, crr);
-  //backpropagate(network, crr);
-  //backpropagate(network, crr);
-  //backpropagate(network, crr);
+  int t = 10;
+  int q = 1200;
+  double score = 0;
   
-  display_net(network);
+  // train the network
+  freopen("mnist_train.csv", "r", stdin);
+  for(int i = 0; i < t; i++) {
+    train(network);
+    //display_error_matrix(network -> output_layer);
+    //display_output_matrix(network -> output_layer);
+  }
+     
+  // query the network
+  freopen("mnist_test.csv", "r", stdin);
+  for(int i = 0; i < q; i++) {
+    score += query(network);
+  }
+  printf("\nAccuracy = %lf", (score / q * 100));
+  
   return 0;
 }
