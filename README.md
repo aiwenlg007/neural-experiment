@@ -1,3 +1,3 @@
-***ARTIFICIAL NEURAL NETWORK LIBRARY***
+***NEURAL EXPERIMENT***
 
-This is an ANN library to quickly prototype my own neural net designs.
+This is an Artificial Neural Network to classify MNIST Handwritten Digits dataset, written in C language.

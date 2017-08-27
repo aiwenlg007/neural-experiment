@@ -1,64 +1,75 @@
 
-neural.c,2160
+LICENSE.md,16
+Copyright 3,13
+
+neural.c,2199
 #define LEARNING_RATE	6,78
-#define MATRIX_MODE	7,104
-#define LIST_MODE	8,126
-#define SHOW_STATS	9,146
-typedef struct neuron 18,300
-  double *output;output19,324
-  double *error;error20,342
-  struct synapse **weights_forward;weights_forward21,359
-  struct synapse **weights_backward;weights_backward22,395
-  struct neuron *next_neuron;next_neuron23,432
-}neuron;neuron24,462
-typedef struct synapse 26,472
-  double *weight;weight27,497
-  struct neuron *from_neuron;from_neuron28,515
-  struct neuron *to_neuron;to_neuron29,545
-}synapse;synapse30,573
-typedef struct layer 32,584
-  int neuron_count;33,607
-  double *output_matrix;output_matrix34,627
-  double *error_matrix;error_matrix35,652
-  double **weight_matrix;weight_matrix36,676
-  struct neuron *neurons;neurons37,702
-  struct layer *next_layer;next_layer38,728
-  struct layer *previous_layer;previous_layer39,756
-}layer;layer40,788
-typedef struct net 42,797
-  struct layer *input_layer;input_layer43,818
-  struct layer *output_layer;output_layer44,847
-}net;net45,877
-double randomiser(47,884
-double learning_rate(51,958
-double sigmoid(55,1010
-double activation_function(59,1068
-double gradient_of_activaton_function(65,1309
-void display_weights_forward(70,1711
-void display_weights_backward(78,1996
-void display_output_matrix(86,2288
-void display_error_matrix(93,2467
-void display_weight_matrix(100,2645
-void display_layer(112,3005
-void display_net(118,3122
-neuron * create_neuron(129,3403
-layer * create_layer(136,3597
-void make_connections(164,4718
-void add_layer_to_net(212,6934
-net * create_network(221,7231
-void set_outputs_for_layer(228,7390
-void set_errors_for_layer(236,7566
-void propagate_using_lists(244,7774
-void propagate_using_matrices(264,8548
-void backpropagate_using_lists(278,9176
-void backpropagate_using_matrices(317,11136
-void propagate(340,12487
-void backpropagate(349,12680
-void construct_network_architecture(358,12890
-double * get_random_inputs(364,13136
-int get_label(371,13394
-double * get_expected(378,13505
-double * get_inputs(386,13700
-int query(396,14021
-void train(426,14896
-int main(438,15179
+#define MATRIX_MODE	7,102
+#define LIST_MODE	8,124
+#define SHOW_STATS	9,144
+typedef struct neuron 17,273
+  double *output;output18,297
+  double *error;error19,315
+  struct synapse **weights_forward;weights_forward20,332
+  struct synapse **weights_backward;weights_backward21,368
+  struct neuron *next_neuron;next_neuron22,405
+}neuron;neuron23,435
+typedef struct synapse 25,445
+  double *weight;weight26,470
+  struct neuron *from_neuron;from_neuron27,488
+  struct neuron *to_neuron;to_neuron28,518
+}synapse;synapse29,546
+typedef struct layer 31,557
+  int neuron_count;32,580
+  double bias;33,600
+  double *output_matrix;output_matrix34,615
+  double *error_matrix;error_matrix35,640
+  double **weight_matrix;weight_matrix36,664
+  struct neuron *neurons;neurons37,690
+  struct layer *next_layer;next_layer38,716
+  struct layer *previous_layer;previous_layer39,744
+}layer;layer40,776
+typedef struct net 42,785
+  struct layer *input_layer;input_layer43,806
+  struct layer *output_layer;output_layer44,835
+}net;net45,865
+double randomiser(47,872
+double learning_rate(51,946
+double sigmoid(55,998
+double derivative_of_sigmoid(59,1056
+double activation_function(63,1140
+void display_weights_forward(67,1203
+void display_weights_backward(75,1488
+void display_output_matrix(83,1780
+void display_error_matrix(90,1959
+void display_weight_matrix(97,2137
+void display_layer(109,2497
+void display_net(115,2614
+neuron * create_neuron(127,2943
+layer * create_layer(134,3137
+void make_connections(163,4284
+void add_layer_to_net(211,6500
+net * create_network(220,6797
+void set_outputs_for_layer(227,6956
+void set_errors_for_layer(235,7132
+void propagate_using_lists(243,7352
+void propagate_using_matrices(263,8149
+void backpropagate_using_lists(277,8800
+void backpropagate_using_matrices(316,10755
+void propagate(346,12548
+void backpropagate(355,12741
+void construct_network_architecture(364,12945
+double * get_random_inputs(370,13191
+int get_label(377,13449
+double * get_target(383,13525
+double * get_inputs(391,13710
+int query(401,14031
+void train(431,14898
+void help_me_debug(440,15090
+int main(465,15798
+
+README.md,0
+
+mnist_train_100.csv,0
+
+mnist_test_10.csv,0
